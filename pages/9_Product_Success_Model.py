@@ -344,51 +344,86 @@ This chart compares model-predicted success against market validation.
 required_scatter = {"success_score", "rating_number", "product_title"}
 if required_scatter.issubset(plot_success.columns):
     scatter_df = plot_success.copy()
-    scatter_df["label_to_show"] = ""
-    top_label_idx = scatter_df.sort_values("success_score", ascending=False).head(12).index
-    scatter_df.loc[top_label_idx, "label_to_show"] = scatter_df.loc[top_label_idx, "short_title"]
 
-    fig_position = px.scatter(
-        scatter_df,
-        x="success_score",
-        y="rating_number",
-        size="price_capped" if "price_capped" in scatter_df.columns else None,
-        color="average_rating" if "average_rating" in scatter_df.columns else None,
-        symbol="success_tier" if "success_tier" in scatter_df.columns else None,
-        text="label_to_show",
-        title="Predicted Success vs Rating Count",
-        hover_data={
-            "product_title": True,
-            "brand": True if "brand" in scatter_df.columns else False,
-            "animal_type": True if "animal_type" in scatter_df.columns else False,
-            "product_type": True if "product_type" in scatter_df.columns else False,
-            "price": ":.2f" if "price" in scatter_df.columns else False,
-            "average_rating": ":.2f" if "average_rating" in scatter_df.columns else False,
-            "rating_number": ":,.0f",
-            "value_score": ":.2f" if "value_score" in scatter_df.columns else False,
-            "success_probability": ":.2%" if "success_probability" in scatter_df.columns else False,
-            "success_score": ":.2f"
-        },
-        color_continuous_scale="Viridis"
-    )
+    # Force numeric columns safely
+    for col in ["success_score", "rating_number", "price_capped", "average_rating"]:
+        if col in scatter_df.columns:
+            scatter_df[col] = pd.to_numeric(scatter_df[col], errors="coerce")
 
-    fig_position.update_traces(
-        textposition="top center",
-        marker=dict(line=dict(width=1, color="white"))
-    )
+    # Keep only valid rows for plotting
+    scatter_df = scatter_df.dropna(subset=["success_score", "rating_number"])
 
-    fig_position.update_layout(
-        xaxis_title="Success Score",
-        yaxis_title="Rating Count",
-        coloraxis_colorbar_title="Avg Rating",
-        margin=dict(l=20, r=20, t=60, b=20)
-    )
+    # Optional size column
+    size_col = None
+    if "price_capped" in scatter_df.columns:
+        scatter_df = scatter_df.dropna(subset=["price_capped"])
+        scatter_df = scatter_df[scatter_df["price_capped"] > 0].copy()
+        if not scatter_df.empty:
+            size_col = "price_capped"
 
-    st.plotly_chart(fig_position, use_container_width=True)
+    # Optional color column
+    color_col = None
+    if "average_rating" in scatter_df.columns:
+        scatter_df = scatter_df.dropna(subset=["average_rating"])
+        if not scatter_df.empty:
+            color_col = "average_rating"
+
+    # Optional symbol column
+    symbol_col = "success_tier" if "success_tier" in scatter_df.columns else None
+
+    if not scatter_df.empty:
+        scatter_df["label_to_show"] = ""
+        top_label_idx = scatter_df.sort_values("success_score", ascending=False).head(12).index
+        scatter_df.loc[top_label_idx, "label_to_show"] = scatter_df.loc[top_label_idx, "short_title"]
+
+        hover_cols = [
+            c for c in [
+                "product_title",
+                "brand",
+                "animal_type",
+                "product_type",
+                "price",
+                "average_rating",
+                "rating_number",
+                "value_score",
+                "success_probability",
+                "success_score",
+                "success_tier"
+            ]
+            if c in scatter_df.columns
+        ]
+
+        fig_position = px.scatter(
+            scatter_df,
+            x="success_score",
+            y="rating_number",
+            size=size_col,
+            color=color_col,
+            symbol=symbol_col,
+            text="label_to_show",
+            hover_name="short_title" if "short_title" in scatter_df.columns else None,
+            hover_data=hover_cols,
+            title="Predicted Success vs Rating Count",
+            color_continuous_scale="Viridis"
+        )
+
+        fig_position.update_traces(
+            textposition="top center",
+            marker=dict(line=dict(width=1, color="white"))
+        )
+
+        fig_position.update_layout(
+            xaxis_title="Success Score",
+            yaxis_title="Rating Count",
+            coloraxis_colorbar_title="Avg Rating" if color_col else "",
+            margin=dict(l=20, r=20, t=60, b=20)
+        )
+
+        st.plotly_chart(fig_position, use_container_width=True)
+    else:
+        st.info("Not enough valid data to display the success positioning map.")
 else:
     st.info("Required columns for the success positioning map are missing.")
-
-st.divider()
 
 # =========================================================
 # 6) Validated winners vs hidden gems
