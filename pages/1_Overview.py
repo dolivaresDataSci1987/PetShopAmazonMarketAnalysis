@@ -1,4 +1,6 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
 import plotly.express as px
 
 from utils.load_data import load_products
@@ -21,6 +23,17 @@ products = products[products["price"] > 0]
 
 if "brand" in products.columns:
     products["brand"] = products["brand"].astype(str).str.strip()
+
+if "category_l1" in products.columns:
+    products["category_l1"] = (
+        products["category_l1"]
+        .astype(str)
+        .str.strip()
+        .replace(
+            ["", "nan", "None", "Unknown", "unknown", "N/A"],
+            np.nan
+        )
+    )
 
 # -----------------------------
 # KPI block
@@ -83,23 +96,36 @@ left, right = st.columns(2)
 
 if "category_l1" in products.columns:
     cat1_summary = (
-        products.groupby("category_l1", dropna=False)
+        products.dropna(subset=["category_l1"])
+        .groupby("category_l1", dropna=False)
         .size()
         .reset_index(name="product_count")
         .sort_values("product_count", ascending=False)
-        .head(15)
+        .head(10)
     )
+
+    cat1_summary["share_pct"] = (
+        cat1_summary["product_count"] / cat1_summary["product_count"].sum() * 100
+    ).round(1)
 
     with left:
         fig_cat1 = px.bar(
-            cat1_summary,
-            x="category_l1",
-            y="product_count",
-            title="Products by Main Category"
+            cat1_summary.sort_values("product_count", ascending=True),
+            x="product_count",
+            y="category_l1",
+            orientation="h",
+            text="share_pct",
+            title="Top Main Categories by Product Count"
+        )
+        fig_cat1.update_traces(
+            texttemplate="%{text:.1f}%",
+            textposition="outside"
         )
         fig_cat1.update_layout(
-            xaxis_title="Category L1",
-            yaxis_title="Product Count"
+            xaxis_title="Product Count",
+            yaxis_title="Category L1",
+            yaxis={"categoryorder": "total ascending"},
+            margin=dict(l=20, r=20, t=50, b=20)
         )
         st.plotly_chart(fig_cat1, use_container_width=True)
 else:
@@ -134,35 +160,69 @@ else:
 st.divider()
 
 # -----------------------------
-# Scatter plot
+# Aggregated price-value view
 # -----------------------------
-st.subheader("Price vs Rating")
-
-hover_cols = [
-    col for col in [
-        "product_title",
-        "brand",
-        "category_l1",
-        "category_l2",
-        "category_l3"
-    ]
-    if col in products.columns
-]
-
-sample_df = products.sample(min(len(products), 3000), random_state=42)
-
-fig_scatter = px.scatter(
-    sample_df,
-    x="price",
-    y="average_rating",
-    size="review_count",
-    hover_data=hover_cols,
-    title="Price, Rating, and Review Volume"
+st.subheader("Price Segment Positioning")
+st.markdown(
+    """
+This chart summarizes how product rating and review intensity change across price ranges.
+Bubble size reflects the number of products in each segment.
+"""
 )
 
-fig_scatter.update_layout(
-    xaxis_title="Price",
-    yaxis_title="Average Rating"
+# Optional cap to reduce impact of extreme outliers
+plot_df = products.copy()
+price_cap = plot_df["price"].quantile(0.99)
+plot_df = plot_df[plot_df["price"] <= price_cap]
+
+# Define price bins
+bins = [0, 10, 20, 30, 50, 75, 100, 150, 999999]
+labels = ["<$10", "$10–20", "$20–30", "$30–50", "$50–75", "$75–100", "$100–150", "$150+"]
+
+plot_df["price_segment"] = pd.cut(
+    plot_df["price"],
+    bins=bins,
+    labels=labels,
+    include_lowest=True,
+    right=False
 )
 
-st.plotly_chart(fig_scatter, use_container_width=True)
+segment_summary = (
+    plot_df.dropna(subset=["price_segment"])
+    .groupby("price_segment", observed=False)
+    .agg(
+        product_count=("price", "size"),
+        avg_rating=("average_rating", "mean"),
+        median_reviews=("review_count", "median"),
+        avg_price=("price", "mean")
+    )
+    .reset_index()
+)
+
+segment_summary = segment_summary[segment_summary["product_count"] > 0]
+
+fig_segment = px.scatter(
+    segment_summary,
+    x="avg_price",
+    y="avg_rating",
+    size="product_count",
+    color="median_reviews",
+    text="price_segment",
+    title="Price Segments: Average Price vs Average Rating",
+    hover_data={
+        "price_segment": True,
+        "product_count": True,
+        "avg_price": ":.2f",
+        "avg_rating": ":.2f",
+        "median_reviews": ":,.0f"
+    }
+)
+
+fig_segment.update_traces(textposition="top center")
+fig_segment.update_layout(
+    xaxis_title="Average Price in Segment",
+    yaxis_title="Average Rating",
+    yaxis_range=[max(0, segment_summary["avg_rating"].min() - 0.2), 5.05]
+)
+
+st.plotly_chart(fig_segment, use_container_width=True)
