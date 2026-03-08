@@ -48,7 +48,7 @@ st.markdown(
         .hero-subtitle {
             font-size: 1.18rem;
             line-height: 1.65;
-            color: rgba(255,255,255,0.90);
+            color: white;
             max-width: 90%;
             margin-bottom: 1.2rem;
         }
