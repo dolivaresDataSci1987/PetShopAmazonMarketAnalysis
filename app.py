@@ -11,142 +11,153 @@ GITHUB_URL = "https://github.com/dolivaresDataSci1987/PetShopAmazonMarketAnalysi
 # ---------------------------------------------------
 # Custom CSS
 # ---------------------------------------------------
+
 st.markdown(
     """
     <style>
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-            max-width: 1250px;
-        }
 
-        .hero-box {
-            background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
-            border-radius: 0 !important;
-            padding: 2.4rem 2.6rem;
-            min-height: 220px;
-        }
+    html {
+        font-size: 13px;
+    }
 
-        .hero-kicker {
-            font-size: 0.9rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #FFFFFF !important;
-            opacity: 1 !important;
-        }
+    body {
+        font-size: 0.9rem;
+    }
 
-        .hero-title {
-            font-size: 3.25rem;
-            font-weight: 800;
-            line-height: 1.05;
-            margin-bottom: 0.9rem;
-            color: #FFFFFF !important;
-        }
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1250px;
+    }
 
-        .hero-subtitle {
-            font-size: 1.18rem;
-            line-height: 1.65;
-            color: #FFFFFF !important;
-            max-width: 90%;
-            margin-bottom: 1.2rem;
-        }
+    .hero-box {
+        background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
+        border-radius: 0 !important;
+        padding: 2.4rem 2.6rem;
+        min-height: 220px;
+    }
 
-        .hero-meta {
-            font-size: 0.98rem;
-            color: #FFFFFF !important;
-            font-weight: 500;
-        }
+    .hero-kicker {
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #FFFFFF !important;
+    }
 
-        .logo-card {
-            background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
-            border-radius: 0 !important;
-            min-height: 280px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.12);
-        }
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1.05;
+        margin-bottom: 0.9rem;
+        color: #FFFFFF !important;
+    }
 
-        .section-text {
-            font-size: 1.03rem;
-            line-height: 1.75;
-            color: #4B5563;
-        }
+    .hero-subtitle {
+        font-size: 1.05rem;
+        line-height: 1.65;
+        color: #FFFFFF !important;
+        max-width: 90%;
+        margin-bottom: 1.2rem;
+    }
 
-        .card {
-            background: white;
-            border: 1px solid #E5E7EB;
-            border-radius: 0 !important;
-            padding: 1.4rem 1.3rem;
-            min-height: 220px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.04);
-        }
+    .hero-meta {
+        font-size: 0.9rem;
+        color: #FFFFFF !important;
+        font-weight: 500;
+    }
 
-        .card-title {
-            font-size: 1.55rem;
-            font-weight: 800;
-            margin-bottom: 0.8rem;
-            color: #1F2937;
-        }
+    .logo-card {
+        background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
+        border-radius: 0 !important;
+        min-height: 260px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        box-shadow: 0 10px 28px rgba(0,0,0,0.12);
+    }
 
-        .card-text {
-            font-size: 1rem;
-            line-height: 1.75;
-            color: #4B5563;
-        }
+    .section-text {
+        font-size: 0.95rem;
+        line-height: 1.7;
+        color: #4B5563;
+    }
 
-        .mini-pill {
-            display: inline-block;
-            padding: 0.35rem 0.7rem;
-            border-radius: 999px;
-            background: #F3F4F6;
-            color: #374151;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-right: 0.4rem;
-            margin-bottom: 0.5rem;
-        }
+    .card {
+        background: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 0 !important;
+        padding: 1.4rem 1.3rem;
+        min-height: 220px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    }
 
-        .cta-box {
-            background: #EEF4FF;
-            border: 1px solid #D9E7FF;
-            border-radius: 0 !important;
-            padding: 1rem 1.1rem;
-            color: #1E5BB8;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-top: 1.2rem;
-        }
+    .card-title {
+        font-size: 1.35rem;
+        font-weight: 800;
+        margin-bottom: 0.8rem;
+        color: #1F2937;
+    }
 
-        .meta-link {
-            font-size: 0.96rem;
-            color: #4B5563;
-            margin-top: 0.5rem;
-        }
+    .card-text {
+        font-size: 0.95rem;
+        line-height: 1.7;
+        color: #4B5563;
+    }
 
-        .meta-link a {
-            color: #1E5BB8;
-            text-decoration: none;
-            font-weight: 600;
-        }
+    .mini-pill {
+        display: inline-block;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: #F3F4F6;
+        color: #374151;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-right: 0.4rem;
+        margin-bottom: 0.5rem;
+    }
 
-        .meta-link a:hover {
-            text-decoration: underline;
-        }
+    .cta-box {
+        background: #EEF4FF;
+        border: 1px solid #D9E7FF;
+        border-radius: 0 !important;
+        padding: 1rem 1.1rem;
+        color: #1E5BB8;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-top: 1.2rem;
+    }
 
-        [data-testid="stSidebarNav"] {
-            padding-top: 1rem;
-        }
+    .meta-link {
+        font-size: 0.85rem;
+        color: #4B5563;
+        margin-top: 0.5rem;
+    }
 
-        [data-testid="stImage"] img {
-            border-radius: 0 !important;
-        }
+    .meta-link a {
+        color: #1E5BB8;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .meta-link a:hover {
+        text-decoration: underline;
+    }
+
+    [data-testid="stSidebarNav"] {
+        padding-top: 1rem;
+    }
+
+    [data-testid="stImage"] img {
+        border-radius: 0 !important;
+    }
+
     </style>
     """,
     unsafe_allow_html=True
 )
+
 # ---------------------------------------------------
 # Sidebar
 # ---------------------------------------------------
