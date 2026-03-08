@@ -461,20 +461,26 @@ with st.expander("View underlying competition table"):
     )
 
 # =========================================================
-# D) Brand vs Brand Comparison
+# 6) Brand vs Brand Comparison
 # =========================================================
-st.header("D. Brand vs Brand Comparison")
+st.subheader("6. Brand vs Brand Comparison")
 st.markdown(
     """
-Select brands to compare their competitive profile, portfolio breadth,
-animal-market coverage, and product-type specialization.
+Select brands to compare their competitive profile across the subcategories
+available in this competition dataset.
 """
 )
 
 # ---------------------------------------------------------
-# Brand selector
+# Build brand list safely from this page's dataset
 # ---------------------------------------------------------
-available_brands = sorted(brand_summary_filtered["brand"].dropna().unique().tolist())
+if "brand" in competition.columns:
+    available_brands = sorted(
+        competition["brand"].dropna().astype(str).str.strip().unique().tolist()
+    )
+    available_brands = [b for b in available_brands if b not in ["", "nan", "None", "Unknown", "unknown", "N/A"]]
+else:
+    available_brands = []
 
 default_brands = []
 for b in ["Amazon Basics", "KONG"]:
@@ -484,230 +490,247 @@ for b in ["Amazon Basics", "KONG"]:
 if len(default_brands) < 2 and len(available_brands) >= 2:
     default_brands = available_brands[:2]
 
-selected_brands = st.multiselect(
-    "Select brands to compare",
-    options=available_brands,
-    default=default_brands,
-    max_selections=4
-)
-
-if len(selected_brands) < 2:
-    st.info("Please select at least 2 brands to activate the comparison module.")
+if not available_brands:
+    st.info("Brand comparison is not available because the competition table does not include a `brand` column.")
 else:
-    compare_summary = brand_summary_filtered[
-        brand_summary_filtered["brand"].isin(selected_brands)
-    ].copy()
-
-    # -----------------------------------------------------
-    # 1) KPI comparison table
-    # -----------------------------------------------------
-    st.subheader("1. Competitive Snapshot")
-
-    comparison_cols = [
-        c for c in [
-            "brand",
-            "product_count",
-            "demand_proxy",
-            "brand_strength_score",
-            "avg_price",
-            "median_price",
-            "avg_rating",
-            "product_types_count",
-            "animal_types_count",
-            "avg_verified_purchase_ratio"
-        ]
-        if c in compare_summary.columns
-    ]
-
-    st.dataframe(
-        compare_summary[comparison_cols].sort_values(
-            "brand_strength_score",
-            ascending=False
-        ) if "brand_strength_score" in compare_summary.columns else compare_summary[comparison_cols],
-        use_container_width=True
+    selected_brands = st.multiselect(
+        "Select brands to compare",
+        options=available_brands,
+        default=default_brands,
+        max_selections=4
     )
 
-    st.divider()
-
-    # -----------------------------------------------------
-    # 2) Radar chart - normalized competitive profile
-    # -----------------------------------------------------
-    st.subheader("2. Competitive Profile Radar")
-    st.markdown(
-        """
-        This radar chart compares brands on a normalized scale across key competitive dimensions.
-        """
-    )
-
-    radar_metrics = [
-        c for c in [
-            "product_count",
-            "demand_proxy",
-            "brand_strength_score",
-            "avg_price",
-            "avg_rating",
-            "product_types_count",
-            "animal_types_count"
-        ]
-        if c in compare_summary.columns
-    ]
-
-    if len(radar_metrics) >= 3:
-        radar_df = compare_summary[["brand"] + radar_metrics].copy()
-
-        # Min-max normalize within selected brands
-        for col in radar_metrics:
-            col_min = radar_df[col].min()
-            col_max = radar_df[col].max()
-            if pd.notna(col_min) and pd.notna(col_max) and col_max > col_min:
-                radar_df[col] = (radar_df[col] - col_min) / (col_max - col_min)
-            else:
-                radar_df[col] = 0.5
-
-        radar_long = radar_df.melt(
-            id_vars="brand",
-            value_vars=radar_metrics,
-            var_name="metric",
-            value_name="score"
-        )
-
-        fig_radar = px.line_polar(
-            radar_long,
-            r="score",
-            theta="metric",
-            color="brand",
-            line_close=True,
-            title="Normalized Competitive Profile"
-        )
-
-        fig_radar.update_traces(fill="toself")
-        fig_radar.update_layout(
-            polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-            margin=dict(l=20, r=20, t=60, b=20)
-        )
-
-        st.plotly_chart(fig_radar, use_container_width=True)
+    if len(selected_brands) < 2:
+        st.info("Please select at least 2 brands to activate the comparison module.")
     else:
-        st.info("Not enough numeric metrics available for the radar chart.")
-
-    st.divider()
-
-    # -----------------------------------------------------
-    # 3) Animal-type comparison
-    # -----------------------------------------------------
-    st.subheader("3. Animal-Market Comparison")
-    st.markdown(
-        """
-        This chart compares how selected brands are distributed across animal markets.
-        """
-    )
-
-    if {"brand", "animal_type"}.issubset(brand_animal_matrix.columns):
-        animal_value_col = "product_count"
-        if "demand_proxy" in brand_animal_matrix.columns:
-            animal_value_col = "demand_proxy"
-
-        compare_animal = (
-            brand_animal_matrix[
-                brand_animal_matrix["brand"].isin(selected_brands)
-            ]
-            .groupby(["brand", "animal_type"], as_index=False)[animal_value_col]
-            .sum()
-        )
-
-        # ensure full grid
-        full_index = pd.MultiIndex.from_product(
-            [selected_brands, valid_animal_order],
-            names=["brand", "animal_type"]
-        ).to_frame(index=False)
-
-        compare_animal = full_index.merge(
-            compare_animal,
-            on=["brand", "animal_type"],
-            how="left"
-        ).fillna(0)
-
-        fig_animal_compare = px.bar(
-            compare_animal,
-            x="animal_type",
-            y=animal_value_col,
-            color="brand",
-            barmode="group",
-            category_orders={"animal_type": valid_animal_order},
-            title=f"Brand Comparison Across Animal Markets ({'Demand Proxy' if animal_value_col == 'demand_proxy' else 'Product Count'})"
-        )
-
-        fig_animal_compare.update_layout(
-            xaxis_title="Animal Type",
-            yaxis_title="Demand Proxy" if animal_value_col == "demand_proxy" else "Product Count",
-            legend_title="Brand",
-            margin=dict(l=20, r=20, t=60, b=20)
-        )
-
-        st.plotly_chart(fig_animal_compare, use_container_width=True)
-    else:
-        st.info("Animal-level comparison data is not available.")
-
-    st.divider()
-
-    # -----------------------------------------------------
-    # 4) Product-type comparison
-    # -----------------------------------------------------
-    st.subheader("4. Product-Type Comparison")
-    st.markdown(
-        """
-        This heatmap compares the product-type footprint of the selected brands.
-        """
-    )
-
-    if {"brand", "product_type_clean"}.issubset(brand_product_matrix.columns):
-        compare_product = (
-            brand_product_matrix[
-                brand_product_matrix["brand"].isin(selected_brands)
-            ]
-            .groupby(["brand", "product_type_clean"], as_index=False)["product_count"]
-            .sum()
-        )
-
-        top_compare_product_types = (
-            compare_product.groupby("product_type_clean")["product_count"]
-            .sum()
-            .sort_values(ascending=False)
-            .head(12)
-            .index.tolist()
-        )
-
-        compare_product = compare_product[
-            compare_product["product_type_clean"].isin(top_compare_product_types)
+        compare_df = competition[
+            competition["brand"].isin(selected_brands)
         ].copy()
 
-        product_compare_matrix = compare_product.pivot(
-            index="brand",
-            columns="product_type_clean",
-            values="product_count"
-        ).fillna(0)
+        # -----------------------------------------------------
+        # 1) KPI comparison table
+        # -----------------------------------------------------
+        st.markdown("**Competitive Snapshot**")
 
-        product_compare_matrix = product_compare_matrix.reindex(index=selected_brands)
+        summary_agg = {
+            "subcategory": ("subcategory", "nunique") if "subcategory" in compare_df.columns else None,
+            "animal_type": ("animal_type", "nunique") if "animal_type" in compare_df.columns else None,
+            "product_type": ("product_type", "nunique") if "product_type" in compare_df.columns else None,
+            "competition_score": ("competition_score", "mean") if "competition_score" in compare_df.columns else None,
+            "demand_per_brand": ("demand_per_brand", "mean") if "demand_per_brand" in compare_df.columns else None,
+            "avg_price": ("avg_price", "mean") if "avg_price" in compare_df.columns else None,
+            "avg_rating": ("avg_rating", "mean") if "avg_rating" in compare_df.columns else None,
+            "product_count": ("product_count", "sum") if "product_count" in compare_df.columns else None,
+        }
+        summary_agg = {k: v for k, v in summary_agg.items() if v is not None}
 
-        ordered_cols = (
-            product_compare_matrix.sum(axis=0)
-            .sort_values(ascending=False)
-            .index.tolist()
-        )
-        product_compare_matrix = product_compare_matrix[ordered_cols]
-
-        fig_product_compare = px.imshow(
-            product_compare_matrix,
-            labels=dict(x="Product Type", y="Brand", color="Product Count"),
-            aspect="auto",
-            color_continuous_scale="Blues",
-            title="Selected Brands Across Product Types"
-        )
-
-        fig_product_compare.update_layout(
-            margin=dict(l=20, r=20, t=60, b=20)
+        compare_summary = (
+            compare_df.groupby("brand")
+            .agg(**summary_agg)
+            .reset_index()
         )
 
-        st.plotly_chart(fig_product_compare, use_container_width=True)
-    else:
-        st.info("Product-type comparison data is not available.")
+        rename_map = {
+            "subcategory": "subcategory_count",
+            "animal_type": "animal_type_count",
+            "product_type": "product_type_count",
+        }
+        compare_summary = compare_summary.rename(columns=rename_map)
+
+        display_cols = [
+            c for c in [
+                "brand",
+                "subcategory_count",
+                "animal_type_count",
+                "product_type_count",
+                "product_count",
+                "competition_score",
+                "demand_per_brand",
+                "avg_price",
+                "avg_rating",
+            ]
+            if c in compare_summary.columns
+        ]
+
+        st.dataframe(compare_summary[display_cols], use_container_width=True)
+
+        st.divider()
+
+        # -----------------------------------------------------
+        # 2) Radar chart - normalized competitive profile
+        # -----------------------------------------------------
+        st.markdown("**Competitive Profile Radar**")
+        st.markdown(
+            """
+            This radar chart compares selected brands on a normalized scale across key metrics.
+            """
+        )
+
+        radar_metrics = [
+            c for c in [
+                "subcategory_count",
+                "animal_type_count",
+                "product_type_count",
+                "product_count",
+                "competition_score",
+                "demand_per_brand",
+                "avg_price",
+                "avg_rating",
+            ]
+            if c in compare_summary.columns
+        ]
+
+        if len(radar_metrics) >= 3:
+            radar_df = compare_summary[["brand"] + radar_metrics].copy()
+
+            for col in radar_metrics:
+                col_min = radar_df[col].min()
+                col_max = radar_df[col].max()
+                if pd.notna(col_min) and pd.notna(col_max) and col_max > col_min:
+                    radar_df[col] = (radar_df[col] - col_min) / (col_max - col_min)
+                else:
+                    radar_df[col] = 0.5
+
+            radar_long = radar_df.melt(
+                id_vars="brand",
+                value_vars=radar_metrics,
+                var_name="metric",
+                value_name="score"
+            )
+
+            fig_radar = px.line_polar(
+                radar_long,
+                r="score",
+                theta="metric",
+                color="brand",
+                line_close=True,
+                title="Normalized Competitive Profile"
+            )
+            fig_radar.update_traces(fill="toself")
+            fig_radar.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+                margin=dict(l=20, r=20, t=60, b=20)
+            )
+
+            st.plotly_chart(fig_radar, use_container_width=True)
+        else:
+            st.info("Not enough numeric metrics available for the radar chart.")
+
+        st.divider()
+
+        # -----------------------------------------------------
+        # 3) Animal-type comparison
+        # -----------------------------------------------------
+        st.markdown("**Animal-Market Comparison**")
+        st.markdown(
+            """
+            This chart compares how selected brands are distributed across animal markets.
+            """
+        )
+
+        if {"brand", "animal_type"}.issubset(compare_df.columns):
+            animal_value_col = "demand_per_brand" if "demand_per_brand" in compare_df.columns else "product_count"
+
+            animal_compare = (
+                compare_df.groupby(["brand", "animal_type"], as_index=False)[animal_value_col]
+                .mean() if animal_value_col == "demand_per_brand"
+                else compare_df.groupby(["brand", "animal_type"], as_index=False)[animal_value_col].sum()
+            )
+
+            full_index = pd.MultiIndex.from_product(
+                [selected_brands, valid_animal_order],
+                names=["brand", "animal_type"]
+            ).to_frame(index=False)
+
+            animal_compare = full_index.merge(
+                animal_compare,
+                on=["brand", "animal_type"],
+                how="left"
+            ).fillna(0)
+
+            fig_animal_compare = px.bar(
+                animal_compare,
+                x="animal_type",
+                y=animal_value_col,
+                color="brand",
+                barmode="group",
+                category_orders={"animal_type": valid_animal_order},
+                title=f"Brand Comparison Across Animal Markets ({'Demand per Brand' if animal_value_col == 'demand_per_brand' else 'Product Count'})"
+            )
+
+            fig_animal_compare.update_layout(
+                xaxis_title="Animal Type",
+                yaxis_title="Demand per Brand" if animal_value_col == "demand_per_brand" else "Product Count",
+                legend_title="Brand",
+                margin=dict(l=20, r=20, t=60, b=20)
+            )
+
+            st.plotly_chart(fig_animal_compare, use_container_width=True)
+        else:
+            st.info("Animal-level comparison data is not available.")
+
+        st.divider()
+
+        # -----------------------------------------------------
+        # 4) Product-type comparison
+        # -----------------------------------------------------
+        st.markdown("**Product-Type Comparison**")
+        st.markdown(
+            """
+            This heatmap compares the product-type footprint of the selected brands.
+            """
+        )
+
+        if {"brand", "product_type"}.issubset(compare_df.columns):
+            product_value_col = "product_count" if "product_count" in compare_df.columns else None
+
+            if product_value_col is not None:
+                product_compare = (
+                    compare_df.groupby(["brand", "product_type"], as_index=False)[product_value_col]
+                    .sum()
+                )
+
+                top_compare_product_types = (
+                    product_compare.groupby("product_type")[product_value_col]
+                    .sum()
+                    .sort_values(ascending=False)
+                    .head(12)
+                    .index.tolist()
+                )
+
+                product_compare = product_compare[
+                    product_compare["product_type"].isin(top_compare_product_types)
+                ].copy()
+
+                product_compare_matrix = product_compare.pivot(
+                    index="brand",
+                    columns="product_type",
+                    values=product_value_col
+                ).fillna(0)
+
+                product_compare_matrix = product_compare_matrix.reindex(index=selected_brands)
+
+                ordered_cols = (
+                    product_compare_matrix.sum(axis=0)
+                    .sort_values(ascending=False)
+                    .index.tolist()
+                )
+                product_compare_matrix = product_compare_matrix[ordered_cols]
+
+                fig_product_compare = px.imshow(
+                    product_compare_matrix,
+                    labels=dict(x="Product Type", y="Brand", color="Product Count"),
+                    aspect="auto",
+                    color_continuous_scale="Blues",
+                    title="Selected Brands Across Product Types"
+                )
+
+                fig_product_compare.update_layout(
+                    margin=dict(l=20, r=20, t=60, b=20)
+                )
+
+                st.plotly_chart(fig_product_compare, use_container_width=True)
+            else:
+                st.info("Product-type comparison data is not available.")
+        else:
+            st.info("Product-type comparison data is not available.")
