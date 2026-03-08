@@ -22,20 +22,20 @@ st.markdown(
 
 .hero-box {
     background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
-    border-radius: 24px;
+    border-radius: 0px;
     padding: 2.4rem 2.6rem;
     min-height: 220px;
 }
         }
 
         .hero-kicker {
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: rgba(255,255,255,0.72);
-            margin-bottom: 0.8rem;
-        }
+            color: white;
+            opacity: 0.9;
+}
 
         .hero-title {
             font-size: 3.25rem;
@@ -61,7 +61,7 @@ st.markdown(
 
         .logo-card {
             background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
-            border-radius: 24px;
+            border-radius: 0px;
             min-height: 280px;
             display: flex;
             align-items: center;
