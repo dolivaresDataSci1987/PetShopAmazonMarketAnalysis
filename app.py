@@ -55,7 +55,7 @@ st.markdown(
 
         .hero-meta {
             font-size: 0.98rem;
-            color: rgba(255,255,255,0.78);
+            color: white;
             font-weight: 500;
         }
 
@@ -79,7 +79,7 @@ st.markdown(
         .card {
             background: white;
             border: 1px solid #E5E7EB;
-            border-radius: 18px;
+            border-radius: 0px;
             padding: 1.4rem 1.3rem;
             min-height: 220px;
             box-shadow: 0 4px 14px rgba(0,0,0,0.04);
