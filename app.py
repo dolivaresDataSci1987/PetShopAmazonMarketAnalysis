@@ -6,6 +6,8 @@ st.set_page_config(
     layout="wide"
 )
 
+GITHUB_URL = "https://github.com/dolivaresDataSci1987/PetShopAmazonMarketAnalysis/tree/main"
+
 # ---------------------------------------------------
 # Custom CSS
 # ---------------------------------------------------
@@ -15,42 +17,65 @@ st.markdown(
         .block-container {
             padding-top: 2rem;
             padding-bottom: 2rem;
-            max-width: 1200px;
+            max-width: 1250px;
         }
 
         .hero-box {
             background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 2.2rem 2.4rem;
-            margin-bottom: 1.8rem;
-            color: white;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.12);
+        }
+
+        .hero-kicker {
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.72);
+            margin-bottom: 0.8rem;
         }
 
         .hero-title {
-            font-size: 2.8rem;
+            font-size: 3.25rem;
             font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 0.6rem;
+            line-height: 1.05;
+            margin-bottom: 0.9rem;
             color: white;
         }
 
         .hero-subtitle {
-            font-size: 1.08rem;
-            color: rgba(255,255,255,0.88);
-            margin-bottom: 0.2rem;
+            font-size: 1.18rem;
+            line-height: 1.65;
+            color: rgba(255,255,255,0.90);
+            max-width: 90%;
+            margin-bottom: 1.2rem;
         }
 
-        .section-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            margin-bottom: 0.3rem;
-            color: #1F2937;
+        .hero-meta {
+            font-size: 0.98rem;
+            color: rgba(255,255,255,0.78);
+            font-weight: 500;
+        }
+
+        .logo-card {
+            background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
+            border-radius: 24px;
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.12);
         }
 
         .section-text {
-            font-size: 1rem;
-            line-height: 1.7;
+            font-size: 1.03rem;
+            line-height: 1.75;
             color: #4B5563;
         }
 
@@ -64,7 +89,7 @@ st.markdown(
         }
 
         .card-title {
-            font-size: 1.6rem;
+            font-size: 1.55rem;
             font-weight: 800;
             margin-bottom: 0.8rem;
             color: #1F2937;
@@ -99,11 +124,20 @@ st.markdown(
             margin-top: 1.2rem;
         }
 
-        .logo-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
+        .meta-link {
+            font-size: 0.96rem;
+            color: #4B5563;
+            margin-top: 0.5rem;
+        }
+
+        .meta-link a {
+            color: #1E5BB8;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .meta-link a:hover {
+            text-decoration: underline;
         }
 
         [data-testid="stSidebarNav"] {
@@ -117,22 +151,30 @@ st.markdown(
 # ---------------------------------------------------
 # Sidebar
 # ---------------------------------------------------
-st.sidebar.markdown("### NOVAres")
+st.sidebar.markdown("## NOVAres")
 st.sidebar.caption("Pet Market Intelligence")
+st.sidebar.markdown("**Author:** David Olivares")
+st.sidebar.markdown("**Year:** 2026")
+st.sidebar.markdown(f"[GitHub Project]({GITHUB_URL})")
 st.sidebar.markdown("---")
 
 # ---------------------------------------------------
-# Hero section
+# Hero
 # ---------------------------------------------------
-left, right = st.columns([1.8, 1])
+left, right = st.columns([1.9, 1.05], gap="medium")
 
 with left:
     st.markdown(
         """
         <div class="hero-box">
+            <div class="hero-kicker">NOVAres · Market Intelligence Dashboard</div>
             <div class="hero-title">Pet Shop Amazon Market Intelligence</div>
             <div class="hero-subtitle">
-                A strategic analytics dashboard by <b>NOVAres</b> for exploring the Amazon pet products market.
+                A strategic analytics dashboard for exploring the Amazon pet products market,
+                identifying competitive dynamics, whitespace opportunities, and product success patterns.
+            </div>
+            <div class="hero-meta">
+                Author: <b>David Olivares</b> · 2026
             </div>
         </div>
         """,
@@ -140,7 +182,23 @@ with left:
     )
 
 with right:
+    st.markdown('<div class="logo-card">', unsafe_allow_html=True)
     st.image("assets/novares_logo.png", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------------------------------------------
+# Repo link under hero
+# ---------------------------------------------------
+st.markdown(
+    f"""
+    <div class="meta-link">
+        Repository: <a href="{GITHUB_URL}" target="_blank">{GITHUB_URL}</a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown("")
 
 # ---------------------------------------------------
 # Intro
@@ -149,7 +207,7 @@ st.markdown(
     """
     <div class="section-text">
         This platform explores the <b>Amazon Pet Products market</b> through a structured set of analytical views.
-        It combines descriptive, competitive, and opportunity-focused analytics to help answer strategic questions such as:
+        It combines descriptive, competitive, and opportunity-focused analytics to support strategic questions such as:
     </div>
     """,
     unsafe_allow_html=True
@@ -158,6 +216,7 @@ st.markdown(
 st.markdown("")
 
 q1, q2 = st.columns(2)
+
 with q1:
     st.markdown(
         """
@@ -169,6 +228,7 @@ with q1:
         """,
         unsafe_allow_html=True
     )
+
 with q2:
     st.markdown(
         """
@@ -184,7 +244,7 @@ with q2:
 st.divider()
 
 # ---------------------------------------------------
-# Main navigation cards
+# Main cards
 # ---------------------------------------------------
 c1, c2, c3 = st.columns(3)
 
