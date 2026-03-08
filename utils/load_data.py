@@ -72,3 +72,9 @@ def load_product_success():
 @st.cache_data
 def load_feature_importance():
     return pd.read_csv(DATA_PATH + "product_success_feature_importance.csv")
+
+def load_product_success_score():
+    return pd.read_csv("data/exports/product_success_score.csv")
+
+def load_product_success_feature_importance():
+    return pd.read_csv("data/exports/product_success_feature_importance.csv")
