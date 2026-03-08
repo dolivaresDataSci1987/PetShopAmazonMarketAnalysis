@@ -20,15 +20,12 @@ st.markdown(
             max-width: 1250px;
         }
 
-        .hero-box {
-            background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
-            border-radius: 24px;
-            padding: 2.2rem 2.4rem;
-            min-height: 280px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.12);
+.hero-box {
+    background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
+    border-radius: 24px;
+    padding: 2.4rem 2.6rem;
+    min-height: 220px;
+}
         }
 
         .hero-kicker {
@@ -159,32 +156,45 @@ st.sidebar.markdown(f"[GitHub Project]({GITHUB_URL})")
 st.sidebar.markdown("---")
 
 # ---------------------------------------------------
-# Hero
+# HERO
 # ---------------------------------------------------
-left, right = st.columns([1.9, 1.05], gap="medium")
 
-with left:
+hero_left, hero_right = st.columns([4,1])
+
+with hero_left:
+
     st.markdown(
         """
         <div class="hero-box">
-            <div class="hero-kicker">NOVAres · Market Intelligence Dashboard</div>
-            <div class="hero-title">Pet Shop Amazon Market Intelligence</div>
-            <div class="hero-subtitle">
-                A strategic analytics dashboard for exploring the Amazon pet products market,
-                identifying competitive dynamics, whitespace opportunities, and product success patterns.
-            </div>
-            <div class="hero-meta">
-                Author: <b>David Olivares</b> · 2026
-            </div>
+
+        <div class="hero-kicker">
+        NOVAres · Market Intelligence Dashboard
+        </div>
+
+        <div class="hero-title">
+        Pet Shop Amazon Market Intelligence
+        </div>
+
+        <div class="hero-subtitle">
+        A strategic analytics dashboard for exploring the Amazon pet products market,
+        identifying competitive dynamics, whitespace opportunities,
+        and product success patterns.
+        </div>
+
+        <div class="hero-meta">
+        Author: <b>David Olivares</b> · 2026
+        </div>
+
         </div>
         """,
         unsafe_allow_html=True
     )
 
-with right:
-    st.markdown('<div class="logo-card">', unsafe_allow_html=True)
-    st.image("assets/novares_logo.png", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+with hero_right:
+    st.image(
+        "assets/novares_logo.png",
+        width=220
+    )
 
 # ---------------------------------------------------
 # Repo link under hero
