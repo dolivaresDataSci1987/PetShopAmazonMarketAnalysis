@@ -33,7 +33,7 @@ st.markdown(
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #FFFFFF !important;
+    color: #FFFFFF;
 }
 
         .hero-title {
