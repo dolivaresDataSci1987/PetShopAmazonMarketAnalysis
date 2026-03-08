@@ -142,6 +142,10 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True
+
+    [data-testid="stImage"] img {
+    border-radius: 0px !important;
+}
 )
 
 # ---------------------------------------------------
