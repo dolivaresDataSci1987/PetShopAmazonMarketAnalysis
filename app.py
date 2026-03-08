@@ -6,64 +6,61 @@ st.set_page_config(
 )
 
 st.title("Pet Shop Amazon Market Intelligence")
+st.caption("A data-driven market intelligence dashboard for Amazon pet product analysis.")
 
 st.markdown(
-"""
-This dashboard explores the **competitive landscape of the Amazon Pet Products market**.
+    """
+This platform explores the **Amazon Pet Products market** through a structured set of analytical views.
 
-The platform transforms raw marketplace data into strategic insights including:
+It combines descriptive, competitive, and opportunity-focused analytics to help answer questions such as:
 
-- Market structure
-- Brand competition
-- Category saturation
-- Product success drivers
-- Market opportunities
-
-Use the navigation menu on the left to explore the different sections of the analysis.
+- How is the market structured?
+- Which brands dominate the landscape?
+- Which categories are more saturated?
+- Where do market gaps exist?
+- What drives product success?
 """
 )
 
 st.divider()
 
-st.header("Project Scope")
+c1, c2, c3 = st.columns(3)
 
-st.markdown(
-"""
-The analysis focuses on identifying **how the Amazon pet products market works**:
+with c1:
+    st.subheader("Market Structure")
+    st.markdown(
+        """
+Explore the composition of the market through:
+        - price segmentation
+        - product types
+        - animal categories
+        """
+    )
 
-- Which product categories dominate the market
-- Which brands lead each segment
-- Where competition is highest
-- Where opportunities still exist
-- What factors drive product success
-"""
-)
+with c2:
+    st.subheader("Competition & Opportunity")
+    st.markdown(
+        """
+Analyze:
+        - brand landscape
+        - category competition
+        - opportunity spaces
+        - market gaps
+        """
+    )
+
+with c3:
+    st.subheader("Product Intelligence")
+    st.markdown(
+        """
+Evaluate:
+        - top products
+        - product velocity
+        - success scoring
+        - success drivers
+        """
+    )
 
 st.divider()
 
-st.header("Analytical Layers")
-
-st.markdown(
-"""
-The platform combines multiple analytical layers:
-
-**Market Structure**
-- Product type distribution
-- Price segmentation
-- Category composition
-
-**Competition Analysis**
-- Brand portfolios
-- Category saturation
-- Competitive density
-
-**Opportunity Mapping**
-- Underserved categories
-- Market gaps
-
-**Product Intelligence**
-- Top performing products
-- Product velocity
-- Success score modeling
-"""
-)
+st.info("Use the navigation menu on the left to explore each section of the dashboard.")
