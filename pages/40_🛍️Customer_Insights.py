@@ -213,3 +213,173 @@ except FileNotFoundError as e:
     st.error(f"File not found: {e}")
 except Exception as e:
     st.error(f"An error occurred while loading the Customer Insights page: {e}")
+
+# ---------------------------------------------------
+# Filters: product type and brand
+# ---------------------------------------------------
+st.subheader("Explore Ratings by Product Type and Brand")
+
+filter_df = products.copy()
+
+# Clean text fields
+filter_df["category_l3"] = filter_df["category_l3"].fillna("Unknown").astype(str).str.strip()
+filter_df["brand"] = filter_df["brand"].fillna("Unknown").astype(str).str.strip()
+
+# Remove low-information labels if needed
+filter_df = filter_df[
+    ~filter_df["brand"].isin(["", "nan", "None"])
+]
+
+product_types = ["All"] + sorted(filter_df["category_l3"].dropna().unique().tolist())
+selected_product_type = st.selectbox(
+    "Select product type",
+    product_types,
+    index=0
+)
+
+if selected_product_type != "All":
+    brand_options_df = filter_df[filter_df["category_l3"] == selected_product_type].copy()
+else:
+    brand_options_df = filter_df.copy()
+
+brand_options = ["All"] + sorted(brand_options_df["brand"].dropna().unique().tolist())
+selected_brand = st.selectbox(
+    "Select brand",
+    brand_options,
+    index=0
+)
+
+filtered_ratings = filter_df.copy()
+
+if selected_product_type != "All":
+    filtered_ratings = filtered_ratings[
+        filtered_ratings["category_l3"] == selected_product_type
+    ]
+
+if selected_brand != "All":
+    filtered_ratings = filtered_ratings[
+        filtered_ratings["brand"] == selected_brand
+    ]
+
+# Optional minimum review threshold
+min_reviews = st.slider(
+    "Minimum number of ratings",
+    min_value=0,
+    max_value=int(filter_df["rating_number"].fillna(0).max()),
+    value=100,
+    step=50
+)
+
+filtered_ratings = filtered_ratings[
+    filtered_ratings["rating_number"].fillna(0) >= min_reviews
+]
+
+# Summary metrics for selection
+m1, m2, m3 = st.columns(3)
+m1.metric("Products in Selection", f"{len(filtered_ratings):,}")
+m2.metric(
+    "Average Rating",
+    f"{filtered_ratings['average_rating'].mean():.2f}" if len(filtered_ratings) else "N/A"
+)
+m3.metric(
+    "Average Price",
+    f"${filtered_ratings['price'].mean():.2f}" if len(filtered_ratings) else "N/A"
+)
+
+# Brand / product type ranking by rating
+ranking_mode = st.radio(
+    "View ratings ranked by",
+    ["Brand", "Product Type"],
+    horizontal=True
+)
+
+if len(filtered_ratings) == 0:
+    st.warning("No products match the selected filters.")
+else:
+    if ranking_mode == "Brand":
+        brand_rank = (
+            filtered_ratings
+            .groupby("brand", as_index=False)
+            .agg(
+                avg_rating=("average_rating", "mean"),
+                product_count=("product_title", "count"),
+                total_ratings=("rating_number", "sum"),
+                avg_price=("price", "mean")
+            )
+        )
+
+        brand_rank = brand_rank[brand_rank["product_count"] >= 2]
+        brand_rank = brand_rank.sort_values(
+            ["avg_rating", "total_ratings"],
+            ascending=[False, False]
+        ).head(20)
+
+        fig_filter = px.bar(
+            brand_rank.sort_values("avg_rating", ascending=True),
+            x="avg_rating",
+            y="brand",
+            orientation="h",
+            color="total_ratings",
+            hover_data={
+                "product_count": True,
+                "total_ratings": True,
+                "avg_price": ":.2f"
+            },
+            title="Top Brands by Average Rating",
+            labels={
+                "avg_rating": "Average Rating",
+                "brand": ""
+            }
+        )
+        fig_filter.update_layout(height=600)
+        st.plotly_chart(fig_filter, use_container_width=True)
+
+        st.dataframe(
+            brand_rank,
+            use_container_width=True
+        )
+
+    else:
+        type_rank = (
+            filtered_ratings
+            .groupby("category_l3", as_index=False)
+            .agg(
+                avg_rating=("average_rating", "mean"),
+                product_count=("product_title", "count"),
+                total_ratings=("rating_number", "sum"),
+                avg_price=("price", "mean")
+            )
+        )
+
+        type_rank = type_rank[type_rank["product_count"] >= 2]
+        type_rank = type_rank.sort_values(
+            ["avg_rating", "total_ratings"],
+            ascending=[False, False]
+        ).head(20)
+
+        fig_filter = px.bar(
+            type_rank.sort_values("avg_rating", ascending=True),
+            x="avg_rating",
+            y="category_l3",
+            orientation="h",
+            color="total_ratings",
+            hover_data={
+                "product_count": True,
+                "total_ratings": True,
+                "avg_price": ":.2f"
+            },
+            title="Top Product Types by Average Rating",
+            labels={
+                "avg_rating": "Average Rating",
+                "category_l3": ""
+            }
+        )
+        fig_filter.update_layout(height=600)
+        st.plotly_chart(fig_filter, use_container_width=True)
+
+        st.dataframe(
+            type_rank,
+            use_container_width=True
+        )
+
+st.markdown("---")
