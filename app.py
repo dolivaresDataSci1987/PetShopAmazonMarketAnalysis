@@ -20,47 +20,47 @@ st.markdown(
             max-width: 1250px;
         }
 
-.hero-box {
-    background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
-    border-radius: 0px;
-    padding: 2.4rem 2.6rem;
-    min-height: 220px;
-}
+        .hero-box {
+            background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
+            border-radius: 0 !important;
+            padding: 2.4rem 2.6rem;
+            min-height: 220px;
         }
 
-       .hero-kicker {
-    font-size: 0.9rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: white !important;
-}
+        .hero-kicker {
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #FFFFFF !important;
+            opacity: 1 !important;
+        }
 
         .hero-title {
             font-size: 3.25rem;
             font-weight: 800;
             line-height: 1.05;
             margin-bottom: 0.9rem;
-            color: white;
+            color: #FFFFFF !important;
         }
 
         .hero-subtitle {
             font-size: 1.18rem;
             line-height: 1.65;
-            color: white;
+            color: #FFFFFF !important;
             max-width: 90%;
             margin-bottom: 1.2rem;
         }
 
         .hero-meta {
             font-size: 0.98rem;
-            color: white;
+            color: #FFFFFF !important;
             font-weight: 500;
         }
 
         .logo-card {
             background: linear-gradient(135deg, #2E145C 0%, #3A1C71 100%);
-            border-radius: 0px;
+            border-radius: 0 !important;
             min-height: 280px;
             display: flex;
             align-items: center;
@@ -78,7 +78,7 @@ st.markdown(
         .card {
             background: white;
             border: 1px solid #E5E7EB;
-            border-radius: 0px;
+            border-radius: 0 !important;
             padding: 1.4rem 1.3rem;
             min-height: 220px;
             box-shadow: 0 4px 14px rgba(0,0,0,0.04);
@@ -112,7 +112,7 @@ st.markdown(
         .cta-box {
             background: #EEF4FF;
             border: 1px solid #D9E7FF;
-            border-radius: 16px;
+            border-radius: 0 !important;
             padding: 1rem 1.1rem;
             color: #1E5BB8;
             font-size: 1rem;
@@ -139,15 +139,14 @@ st.markdown(
         [data-testid="stSidebarNav"] {
             padding-top: 1rem;
         }
+
+        [data-testid="stImage"] img {
+            border-radius: 0 !important;
+        }
     </style>
     """,
     unsafe_allow_html=True
-
-    [data-testid="stImage"] img {
-    border-radius: 0px !important;
-}
 )
-
 # ---------------------------------------------------
 # Sidebar
 # ---------------------------------------------------
