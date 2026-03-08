@@ -1,6 +1,21 @@
 import streamlit as st
 
 st.set_page_config(
+    page_title="NOVAres | Pet Market Intelligence",
+    page_icon="🐾",
+    layout="wide"
+)
+
+# ---------------------------------------------------
+# Sidebar logo
+# ---------------------------------------------------
+
+st.sidebar.image(
+    "assets/novares_logo.png",
+    use_container_width=True
+)
+
+st.set_page_config(
     page_title="Pet Shop Amazon Market Intelligence",
     layout="wide"
 )
