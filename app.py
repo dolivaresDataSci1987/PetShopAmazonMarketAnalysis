@@ -28,13 +28,12 @@ st.markdown(
 }
         }
 
-        .hero-kicker {
-            font-size: 0.9rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: white;
-            opacity: 0.9;
+       .hero-kicker {
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #FFFFFF !important;
 }
 
         .hero-title {
