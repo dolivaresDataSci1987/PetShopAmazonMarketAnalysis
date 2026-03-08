@@ -155,34 +155,50 @@ if {"average_rating", "rating_number"}.issubset(filtered_df.columns):
 
     bubble_df = filtered_df.copy()
 
+    # Force numeric types safely
+    bubble_df["average_rating"] = pd.to_numeric(bubble_df["average_rating"], errors="coerce")
+    bubble_df["rating_number"] = pd.to_numeric(bubble_df["rating_number"], errors="coerce")
+
     if "price" in bubble_df.columns:
-        size_col = "price"
+        bubble_df["price"] = pd.to_numeric(bubble_df["price"], errors="coerce")
+
+    # Remove invalid rows
+    bubble_df = bubble_df.dropna(subset=["average_rating", "rating_number"])
+
+    # Optional cap for bubble size so huge products do not dominate
+    if "price" in bubble_df.columns:
+        bubble_df = bubble_df.dropna(subset=["price"])
+        bubble_df = bubble_df[bubble_df["price"] > 0].copy()
+        price_cap = bubble_df["price"].quantile(0.95)
+        bubble_df["price_capped"] = bubble_df["price"].clip(upper=price_cap)
+        size_col = "price_capped"
     else:
         size_col = None
 
-    fig_bubble = px.scatter(
-        bubble_df,
-        x="average_rating",
-        y="rating_number",
-        size=size_col,
-        color="brand" if "brand" in bubble_df.columns else None,
-        hover_data={
-            "product_title": True,
-            "price": ":.2f" if "price" in bubble_df.columns else False,
-            "rating_number": ":,.0f",
-        },
-        title="Product Quality vs Market Validation"
-    )
+    if not bubble_df.empty:
+        fig_bubble = px.scatter(
+            bubble_df,
+            x="average_rating",
+            y="rating_number",
+            size=size_col,
+            color="brand" if "brand" in bubble_df.columns else None,
+            hover_name="short_title" if "short_title" in bubble_df.columns else None,
+            hover_data=[
+                c for c in ["product_title", "brand", "price", "average_rating", "rating_number"]
+                if c in bubble_df.columns
+            ],
+            title="Product Quality vs Market Validation"
+        )
 
-    fig_bubble.update_layout(
-        xaxis_title="Average Rating",
-        yaxis_title="Rating Count",
-        margin=dict(l=20, r=20, t=60, b=20)
-    )
+        fig_bubble.update_layout(
+            xaxis_title="Average Rating",
+            yaxis_title="Rating Count",
+            margin=dict(l=20, r=20, t=60, b=20)
+        )
 
-    st.plotly_chart(fig_bubble, use_container_width=True)
-
-st.divider()
+        st.plotly_chart(fig_bubble, use_container_width=True)
+    else:
+        st.info("Not enough valid data to display the Rating vs Review Volume chart.")
 
 # =========================================================
 # Underlying table
