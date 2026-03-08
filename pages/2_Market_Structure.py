@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 
 from utils.load_data import load_products
 
@@ -25,28 +24,24 @@ products = load_products().copy()
 products = products.dropna(subset=["price", "average_rating", "review_count"])
 products = products[products["price"] > 0].copy()
 
-# Safe string cleanup
 for col in ["brand", "category_l2", "category_l3"]:
     if col in products.columns:
         products[col] = products[col].astype(str).str.strip()
 
-# Raw fields
 products["brand"] = products["brand"]
 products["animal_type_raw"] = products["category_l2"]
-products["product_type"] = products["category_l3"]
+products["product_type_raw"] = products["category_l3"]
 
-# Remove clearly invalid generic labels
 invalid_labels = ["", "nan", "None", "Unknown", "unknown", "N/A"]
 
 products = products[
     ~products["brand"].isin(invalid_labels) &
     ~products["animal_type_raw"].isin(invalid_labels) &
-    ~products["product_type"].isin(invalid_labels)
+    ~products["product_type_raw"].isin(invalid_labels)
 ].copy()
 
 # =========================================================
 # Normalize animal types
-# Keep ONLY valid animal categories
 # =========================================================
 animal_mapping = {
     "Dogs": "Dogs",
@@ -81,16 +76,16 @@ valid_animal_order = [
 products["animal_type"] = products["animal_type_raw"].map(animal_mapping)
 products = products[products["animal_type"].isin(valid_animal_order)].copy()
 
-# Optional price cap for cleaner visuals
-price_cap = products["price"].quantile(0.99)
-plot_products = products[products["price"] <= price_cap].copy()
-
 # =========================================================
-# Normalize product types a bit
+# Normalize product types
 # =========================================================
 product_type_mapping = {
     "Food": "Food",
+    "Dry Food": "Food",
+    "Wet Food": "Food",
     "Treats": "Treats",
+    "Biscuits": "Treats",
+    "Chews": "Treats",
     "Toys": "Toys",
     "Toy": "Toys",
     "Beds": "Beds",
@@ -99,15 +94,23 @@ product_type_mapping = {
     "Leashes": "Leashes",
     "Bowls": "Bowls",
     "Grooming": "Grooming",
+    "Shampoos": "Grooming",
     "Health Supplies": "Health Supplies",
-    "Waste Bags": "Waste Bags",
-    "Litter": "Litter",
-    "Aquariums": "Aquariums",
-    "Habitats": "Habitats",
-    "Supplements": "Supplements"
+    "Supplements": "Health Supplies",
+    "Vitamins": "Health Supplies",
+    "Waste Bags": "Waste & Litter",
+    "Litter": "Waste & Litter",
+    "Aquariums": "Aquariums & Accessories",
+    "Filters": "Aquariums & Accessories",
+    "Habitats": "Habitats & Cages",
+    "Cages": "Habitats & Cages",
 }
 
-plot_products["product_type_clean"] = plot_products["product_type"].replace(product_type_mapping)
+products["product_type_clean"] = products["product_type_raw"].replace(product_type_mapping)
+
+# Keep a capped version for cleaner price visuals
+price_cap = products["price"].quantile(0.99)
+plot_products = products[products["price"] <= price_cap].copy()
 
 # =========================================================
 # Price segments
@@ -124,12 +127,12 @@ plot_products["price_segment"] = pd.cut(
 )
 
 # =========================================================
-# KPIs
+# KPI block
 # =========================================================
 total_products = len(products)
 total_brands = products["brand"].nunique()
 total_animal_types = products["animal_type"].nunique()
-total_product_types = products["product_type"].nunique()
+total_product_types = products["product_type_clean"].nunique()
 avg_price = products["price"].mean()
 median_price = products["price"].median()
 
@@ -150,7 +153,7 @@ st.subheader("1. Brand Distribution Across Price Segments")
 st.markdown(
     """
 This view shows how many distinct brands compete in each price tier,
-together with the number of products listed in that segment.
+together with the number of listed products in that segment.
 """
 )
 
@@ -209,7 +212,7 @@ st.subheader("2. Product-Level Price Distribution by Animal Type")
 st.markdown(
     """
 This box plot shows how product prices are distributed within each animal category.
-It highlights which animal markets are tighter and which are more price-dispersed.
+It highlights which markets are tighter and which are more price-dispersed.
 """
 )
 
@@ -235,91 +238,9 @@ st.plotly_chart(fig_box, use_container_width=True)
 st.divider()
 
 # =========================================================
-# 3) Min / Mean / Max price by animal type
+# 3) Product type by brand
 # =========================================================
-st.subheader("3. Minimum, Average, and Maximum Price by Animal Type")
-st.markdown(
-    """
-This view summarizes the price span of each animal type,
-showing the minimum, average, and maximum observed prices.
-"""
-)
-
-animal_price_stats = (
-    plot_products.groupby("animal_type")
-    .agg(
-        min_price=("price", "min"),
-        avg_price=("price", "mean"),
-        max_price=("price", "max"),
-        product_count=("price", "size")
-    )
-    .reindex(valid_animal_order)
-    .reset_index()
-)
-
-fig_dumbbell = go.Figure()
-
-for _, row in animal_price_stats.iterrows():
-    fig_dumbbell.add_trace(
-        go.Scatter(
-            x=[row["min_price"], row["max_price"]],
-            y=[row["animal_type"], row["animal_type"]],
-            mode="lines",
-            line=dict(width=5),
-            showlegend=False,
-            hoverinfo="skip"
-        )
-    )
-
-fig_dumbbell.add_trace(
-    go.Scatter(
-        x=animal_price_stats["min_price"],
-        y=animal_price_stats["animal_type"],
-        mode="markers",
-        name="Min Price",
-        marker=dict(size=9, symbol="circle"),
-        hovertemplate="Animal Type: %{y}<br>Min Price: $%{x:.2f}<extra></extra>"
-    )
-)
-
-fig_dumbbell.add_trace(
-    go.Scatter(
-        x=animal_price_stats["avg_price"],
-        y=animal_price_stats["animal_type"],
-        mode="markers",
-        name="Average Price",
-        marker=dict(size=12, symbol="diamond"),
-        hovertemplate="Animal Type: %{y}<br>Average Price: $%{x:.2f}<extra></extra>"
-    )
-)
-
-fig_dumbbell.add_trace(
-    go.Scatter(
-        x=animal_price_stats["max_price"],
-        y=animal_price_stats["animal_type"],
-        mode="markers",
-        name="Max Price",
-        marker=dict(size=9, symbol="circle-open"),
-        hovertemplate="Animal Type: %{y}<br>Max Price: $%{x:.2f}<extra></extra>"
-    )
-)
-
-fig_dumbbell.update_layout(
-    title="Price Span by Animal Type",
-    xaxis_title="Price",
-    yaxis_title="Animal Type",
-    margin=dict(l=20, r=20, t=60, b=20),
-    legend_title=""
-)
-
-st.plotly_chart(fig_dumbbell, use_container_width=True)
-
-st.divider()
-
-# =========================================================
-# 4) Product type by brand
-# =========================================================
-st.subheader("4. Product-Type Portfolio by Brand")
+st.subheader("3. Product-Type Portfolio by Brand")
 st.markdown(
     """
 This heatmap shows how top brands are distributed across major product types.
@@ -363,7 +284,7 @@ heatmap_matrix = heatmap_matrix.loc[
     heatmap_matrix.sum(axis=1).sort_values(ascending=False).index
 ]
 
-fig_heatmap = px.imshow(
+fig_heatmap_brand = px.imshow(
     heatmap_matrix,
     labels=dict(x="Product Type", y="Brand", color="Product Count"),
     aspect="auto",
@@ -371,89 +292,229 @@ fig_heatmap = px.imshow(
     title="Top Brands vs Top Product Types"
 )
 
-fig_heatmap.update_layout(
+fig_heatmap_brand.update_layout(
     margin=dict(l=20, r=20, t=60, b=20)
 )
 
-st.plotly_chart(fig_heatmap, use_container_width=True)
+st.plotly_chart(fig_heatmap_brand, use_container_width=True)
 
 st.divider()
 
 # =========================================================
-# 5) Additional non-redundant view:
-# Supply vs review-volume share by animal type
+# 4) Product type composition by animal type
 # =========================================================
-st.subheader("5. Supply vs Review-Volume Balance by Animal Type")
+st.subheader("4. Product-Type Composition by Animal Type")
 st.markdown(
     """
-This view compares each animal category's share of listed products
-against its share of total review volume as a demand proxy.
+This heatmap shows which product types dominate each animal market.
+It helps reveal category-specific structural patterns.
 """
 )
 
-animal_balance = (
-    products.groupby("animal_type")
+top_product_types_animal = (
+    plot_products.groupby("product_type_clean")
+    .size()
+    .sort_values(ascending=False)
+    .head(12)
+    .index.tolist()
+)
+
+animal_product_heatmap = (
+    plot_products[
+        plot_products["product_type_clean"].isin(top_product_types_animal)
+    ]
+    .groupby(["animal_type", "product_type_clean"])
+    .size()
+    .reset_index(name="product_count")
+)
+
+animal_product_matrix = animal_product_heatmap.pivot(
+    index="animal_type",
+    columns="product_type_clean",
+    values="product_count"
+).fillna(0)
+
+animal_product_matrix = animal_product_matrix.reindex(valid_animal_order)
+
+fig_heatmap_animal = px.imshow(
+    animal_product_matrix,
+    labels=dict(x="Product Type", y="Animal Type", color="Product Count"),
+    aspect="auto",
+    color_continuous_scale="Teal",
+    title="Animal Types vs Product Types"
+)
+
+fig_heatmap_animal.update_layout(
+    margin=dict(l=20, r=20, t=60, b=20)
+)
+
+st.plotly_chart(fig_heatmap_animal, use_container_width=True)
+
+st.divider()
+
+# =========================================================
+# 5) Price tier composition by animal type
+# =========================================================
+st.subheader("5. Price-Tier Composition by Animal Type")
+st.markdown(
+    """
+This stacked bar chart shows how each animal market is distributed across price tiers.
+It helps identify whether a category is concentrated in low, mid, or premium price bands.
+"""
+)
+
+animal_price_mix = (
+    plot_products.groupby(["animal_type", "price_segment"], observed=False)
+    .size()
+    .reset_index(name="product_count")
+)
+
+animal_totals = (
+    animal_price_mix.groupby("animal_type")["product_count"]
+    .sum()
+    .reset_index(name="total_products")
+)
+
+animal_price_mix = animal_price_mix.merge(animal_totals, on="animal_type", how="left")
+animal_price_mix["share_pct"] = (
+    animal_price_mix["product_count"] / animal_price_mix["total_products"] * 100
+)
+
+fig_stacked = px.bar(
+    animal_price_mix,
+    x="animal_type",
+    y="share_pct",
+    color="price_segment",
+    category_orders={
+        "animal_type": valid_animal_order,
+        "price_segment": labels
+    },
+    title="Price Tier Mix Within Each Animal Type"
+)
+
+fig_stacked.update_layout(
+    xaxis_title="Animal Type",
+    yaxis_title="Share of Products (%)",
+    legend_title="Price Segment",
+    barmode="stack",
+    margin=dict(l=20, r=20, t=60, b=20)
+)
+
+st.plotly_chart(fig_stacked, use_container_width=True)
+
+st.divider()
+
+# =========================================================
+# 6) Brand specialization across animal markets
+# =========================================================
+st.subheader("6. Brand Specialization Across Animal Markets")
+st.markdown(
+    """
+This heatmap shows whether leading brands are specialized in one animal market
+or diversified across several.
+"""
+)
+
+top_brands_specialization = (
+    plot_products.groupby("brand")
+    .size()
+    .sort_values(ascending=False)
+    .head(15)
+    .index.tolist()
+)
+
+brand_animal_heatmap = (
+    plot_products[
+        plot_products["brand"].isin(top_brands_specialization)
+    ]
+    .groupby(["brand", "animal_type"])
+    .size()
+    .reset_index(name="product_count")
+)
+
+brand_animal_matrix = brand_animal_heatmap.pivot(
+    index="brand",
+    columns="animal_type",
+    values="product_count"
+).fillna(0)
+
+brand_animal_matrix = brand_animal_matrix[
+    [c for c in valid_animal_order if c in brand_animal_matrix.columns]
+]
+
+brand_animal_matrix = brand_animal_matrix.loc[
+    brand_animal_matrix.sum(axis=1).sort_values(ascending=False).index
+]
+
+fig_heatmap_specialization = px.imshow(
+    brand_animal_matrix,
+    labels=dict(x="Animal Type", y="Brand", color="Product Count"),
+    aspect="auto",
+    color_continuous_scale="Purples",
+    title="Top Brands Across Animal Markets"
+)
+
+fig_heatmap_specialization.update_layout(
+    margin=dict(l=20, r=20, t=60, b=20)
+)
+
+st.plotly_chart(fig_heatmap_specialization, use_container_width=True)
+
+st.divider()
+
+# =========================================================
+# 7) Brand portfolio breadth
+# =========================================================
+st.subheader("7. Brand Portfolio Breadth")
+st.markdown(
+    """
+This chart shows how many distinct product types each leading brand covers.
+It helps distinguish specialist brands from broader portfolio players.
+"""
+)
+
+brand_portfolio = (
+    plot_products.groupby("brand")
     .agg(
         product_count=("price", "size"),
-        brand_count=("brand", "nunique"),
-        avg_price=("price", "mean"),
-        review_volume=("review_count", "sum")
+        product_type_count=("product_type_clean", "nunique"),
+        animal_type_count=("animal_type", "nunique")
     )
-    .reindex(valid_animal_order)
     .reset_index()
 )
 
-animal_balance["product_share_pct"] = (
-    animal_balance["product_count"] / animal_balance["product_count"].sum() * 100
-)
+brand_portfolio = brand_portfolio.sort_values(
+    ["product_type_count", "product_count"],
+    ascending=[False, False]
+).head(20)
 
-animal_balance["review_share_pct"] = (
-    animal_balance["review_volume"] / animal_balance["review_volume"].sum() * 100
-)
-
-max_axis = max(
-    animal_balance["product_share_pct"].max(),
-    animal_balance["review_share_pct"].max()
-) * 1.08
-
-fig_balance = px.scatter(
-    animal_balance,
-    x="product_share_pct",
-    y="review_share_pct",
-    size="brand_count",
-    color="avg_price",
-    text="animal_type",
-    title="Supply vs Review-Volume Share by Animal Type",
+fig_portfolio = px.scatter(
+    brand_portfolio,
+    x="product_type_count",
+    y="product_count",
+    size="animal_type_count",
+    color="animal_type_count",
+    text="brand",
+    title="Brand Breadth: Product-Type Coverage vs Product Count",
     hover_data={
-        "animal_type": True,
+        "brand": True,
+        "product_type_count": True,
         "product_count": True,
-        "brand_count": True,
-        "avg_price": ":.2f",
-        "product_share_pct": ":.1f",
-        "review_share_pct": ":.1f"
+        "animal_type_count": True
     },
-    color_continuous_scale="Tealgrn"
+    color_continuous_scale="Sunset"
 )
 
-fig_balance.update_traces(
+fig_portfolio.update_traces(
     textposition="top center",
     marker=dict(line=dict(width=1, color="white"))
 )
 
-fig_balance.add_shape(
-    type="line",
-    x0=0,
-    y0=0,
-    x1=max_axis,
-    y1=max_axis,
-    line=dict(dash="dash")
-)
-
-fig_balance.update_layout(
-    xaxis_title="Share of Total Products (%)",
-    yaxis_title="Share of Total Review Volume (%)",
-    coloraxis_colorbar_title="Avg Price",
+fig_portfolio.update_layout(
+    xaxis_title="Distinct Product Types Covered",
+    yaxis_title="Total Product Count",
+    coloraxis_colorbar_title="Animal Types",
     margin=dict(l=20, r=20, t=60, b=20)
 )
 
-st.plotly_chart(fig_balance, use_container_width=True)
+st.plotly_chart(fig_portfolio, use_container_width=True)
