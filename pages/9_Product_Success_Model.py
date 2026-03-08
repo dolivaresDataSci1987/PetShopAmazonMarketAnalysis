@@ -523,112 +523,30 @@ st.divider()
 # =========================================================
 # 7) Product drill-down
 # =========================================================
-st.subheader("7. Product Drill-Down")
-st.markdown(
-    """
-Inspect a specific product and compare its success profile against the current filtered market.
-"""
-)
-
-drill_candidates = (
-    plot_success.sort_values("success_score", ascending=False)["product_title"]
-    .dropna()
-    .unique()
-    .tolist()
-)
-
-selected_product = st.selectbox(
-    "Select product",
-    options=drill_candidates,
-    key="success_product"
-) if drill_candidates else None
-
-if selected_product is not None:
-    selected_df = plot_success[plot_success["product_title"] == selected_product].copy()
-
-    if not selected_df.empty:
-        row = selected_df.iloc[0]
-
-        market_avg_success = plot_success["success_score"].mean() if "success_score" in plot_success.columns else np.nan
-        market_avg_prob = plot_success["success_probability"].mean() if "success_probability" in plot_success.columns else np.nan
-        market_avg_price = plot_success["price"].mean() if "price" in plot_success.columns else np.nan
-        market_avg_rating = plot_success["average_rating"].mean() if "average_rating" in plot_success.columns else np.nan
-        market_avg_rating_count = plot_success["rating_number"].mean() if "rating_number" in plot_success.columns else np.nan
-        market_avg_value = plot_success["value_score"].mean() if "value_score" in plot_success.columns else np.nan
-
-        st.markdown(f"### {selected_product}")
-
-        c1, c2, c3, c4, c5, c6 = st.columns(6)
-
-        c1.metric(
-            "Success Score",
-            f"{row['success_score']:.2f}" if pd.notna(row.get("success_score", np.nan)) else "NA",
-            delta=(
-                f"{row['success_score'] - market_avg_success:+.2f} vs filtered market"
-                if pd.notna(row.get("success_score", np.nan)) and pd.notna(market_avg_success)
-                else None
-            )
-        )
-        c2.metric(
-            "Success Probability",
-            f"{row['success_probability']:.2%}" if pd.notna(row.get("success_probability", np.nan)) else "NA",
-            delta=(
-                f"{row['success_probability'] - market_avg_prob:+.2%} vs filtered market"
-                if pd.notna(row.get("success_probability", np.nan)) and pd.notna(market_avg_prob)
-                else None
-            )
-        )
-        c3.metric(
-            "Value Score",
-            f"{row['value_score']:.2f}" if pd.notna(row.get("value_score", np.nan)) else "NA",
-            delta=(
-                f"{row['value_score'] - market_avg_value:+.2f} vs filtered market"
-                if pd.notna(row.get("value_score", np.nan)) and pd.notna(market_avg_value)
-                else None
-            )
-        )
-        c4.metric(
-            "Price",
-            f"${row['price']:,.2f}" if pd.notna(row.get("price", np.nan)) else "NA",
-            delta=(
-                f"{row['price'] - market_avg_price:+.2f} vs filtered market"
-                if pd.notna(row.get("price", np.nan)) and pd.notna(market_avg_price)
-                else None
-            )
-        )
-        c5.metric(
-            "Avg Rating",
-            f"{row['average_rating']:.2f}" if pd.notna(row.get("average_rating", np.nan)) else "NA",
-            delta=(
-                f"{row['average_rating'] - market_avg_rating:+.2f} vs filtered market"
-                if pd.notna(row.get("average_rating", np.nan)) and pd.notna(market_avg_rating)
-                else None
-            )
-        )
-        c6.metric(
-            "Rating Count",
-            f"{int(row['rating_number']):,}" if pd.notna(row.get("rating_number", np.nan)) else "NA",
-            delta=(
-                f"{row['rating_number'] - market_avg_rating_count:+,.0f} vs filtered market"
-                if pd.notna(row.get("rating_number", np.nan)) and pd.notna(market_avg_rating_count)
-                else None
-            )
-        )
-
-        st.divider()
 
         st.markdown("**Position vs Filtered Market**")
 
         drill_plot = plot_success.copy()
         drill_plot["is_selected"] = drill_plot["product_title"] == selected_product
 
-        fig_drill = px.scatter(
-            drill_plot,
-            x="success_score",
-            y="rating_number",
-            size="price_capped" if "price_capped" in drill_plot.columns else None,
-            color="is_selected",
-            hover_data=[
+        # Force numeric columns safely
+        for col in ["success_score", "rating_number", "price_capped"]:
+            if col in drill_plot.columns:
+                drill_plot[col] = pd.to_numeric(drill_plot[col], errors="coerce")
+
+        # Keep only valid rows for plotting
+        drill_plot = drill_plot.dropna(subset=["success_score", "rating_number"]).copy()
+
+        # Optional size column
+        size_col = None
+        if "price_capped" in drill_plot.columns:
+            drill_plot = drill_plot.dropna(subset=["price_capped"])
+            drill_plot = drill_plot[drill_plot["price_capped"] > 0].copy()
+            if not drill_plot.empty:
+                size_col = "price_capped"
+
+        if not drill_plot.empty:
+            hover_cols = [
                 c for c in [
                     "product_title",
                     "brand",
@@ -640,46 +558,29 @@ if selected_product is not None:
                     "value_score",
                     "success_probability",
                     "success_tier"
-                ] if c in drill_plot.columns
-            ],
-            title=f"Selected Product vs Filtered Market: {selected_product}",
-            color_discrete_map={True: "#d62728", False: "#9aa0a6"}
-        )
+                ]
+                if c in drill_plot.columns
+            ]
 
-        fig_drill.update_layout(
-            xaxis_title="Success Score",
-            yaxis_title="Rating Count",
-            showlegend=False,
-            margin=dict(l=20, r=20, t=60, b=20)
-        )
+            fig_drill = px.scatter(
+                drill_plot,
+                x="success_score",
+                y="rating_number",
+                size=size_col,
+                color="is_selected",
+                hover_name="short_title" if "short_title" in drill_plot.columns else None,
+                hover_data=hover_cols,
+                title=f"Selected Product vs Filtered Market: {selected_product}",
+                color_discrete_map={True: "#d62728", False: "#9aa0a6"}
+            )
 
-        st.plotly_chart(fig_drill, use_container_width=True)
+            fig_drill.update_layout(
+                xaxis_title="Success Score",
+                yaxis_title="Rating Count",
+                showlegend=False,
+                margin=dict(l=20, r=20, t=60, b=20)
+            )
 
-st.divider()
-
-with st.expander("View underlying success model table"):
-    display_cols = [
-        c for c in [
-            "product_title",
-            "brand",
-            "animal_type",
-            "product_type",
-            "price",
-            "average_rating",
-            "rating_number",
-            "review_count",
-            "reviews_per_month",
-            "rating_number_per_month",
-            "value_score",
-            "success_probability",
-            "success_score",
-            "success_tier",
-            "success_rank",
-        ]
-        if c in plot_success.columns
-    ]
-
-    st.dataframe(
-        plot_success[display_cols].sort_values("success_score", ascending=False),
-        use_container_width=True
-    )
+            st.plotly_chart(fig_drill, use_container_width=True)
+        else:
+            st.info("Not enough valid data to display the drill-down comparison.")
