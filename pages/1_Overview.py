@@ -94,43 +94,45 @@ st.divider()
 # -----------------------------
 left, right = st.columns(2)
 
-if "category_l1" in products.columns:
-    cat1_summary = (
-        products.dropna(subset=["category_l1"])
-        .groupby("category_l1", dropna=False)
+if "category_l2" in products.columns:
+    cat2_summary = (
+        products.dropna(subset=["category_l2"])
+        .assign(category_l2=lambda x: x["category_l2"].astype(str).str.strip())
+        .loc[lambda x: ~x["category_l2"].isin(["", "nan", "None", "Unknown"])]
+        .groupby("category_l2", dropna=False)
         .size()
         .reset_index(name="product_count")
         .sort_values("product_count", ascending=False)
         .head(10)
     )
 
-    cat1_summary["share_pct"] = (
-        cat1_summary["product_count"] / cat1_summary["product_count"].sum() * 100
+    cat2_summary["share_pct"] = (
+        cat2_summary["product_count"] / cat2_summary["product_count"].sum() * 100
     ).round(1)
 
     with left:
-        fig_cat1 = px.bar(
-            cat1_summary.sort_values("product_count", ascending=True),
+        fig_cat2 = px.bar(
+            cat2_summary.sort_values("product_count", ascending=True),
             x="product_count",
-            y="category_l1",
+            y="category_l2",
             orientation="h",
             text="share_pct",
-            title="Top Main Categories by Product Count"
+            title="Top Animal Types by Product Count"
         )
-        fig_cat1.update_traces(
+        fig_cat2.update_traces(
             texttemplate="%{text:.1f}%",
             textposition="outside"
         )
-        fig_cat1.update_layout(
+        fig_cat2.update_layout(
             xaxis_title="Product Count",
-            yaxis_title="Category L1",
+            yaxis_title="Animal Type",
             yaxis={"categoryorder": "total ascending"},
             margin=dict(l=20, r=20, t=50, b=20)
         )
-        st.plotly_chart(fig_cat1, use_container_width=True)
+        st.plotly_chart(fig_cat2, use_container_width=True)
 else:
     with left:
-        st.info("Column `category_l1` not found in products_master.csv")
+        st.info("Column `category_l2` not found in products_master.csv")
 
 if "brand" in products.columns:
     brand_summary = (
